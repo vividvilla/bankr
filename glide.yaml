@@ -1,0 +1,3 @@
+package: github.com/vividvilla/bankr
+import:
+- package: github.com/spf13/viper
