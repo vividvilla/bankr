@@ -1,6 +1,0 @@
-package: github.com/vividvilla/bankr
-import:
-- package: github.com/spf13/viper
-- package: github.com/spf13/pflag
-- package: github.com/Sirupsen/logrus
-  version: ^0.11.5

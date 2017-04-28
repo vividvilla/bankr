@@ -1,14 +1,16 @@
 package main
 
 import (
-	"fmt"
 	"flag"
-	"github.com/spf13/viper"
+	"fmt"
+
 	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
+
 	log "github.com/Sirupsen/logrus"
 )
 
-func init () {
+func init() {
 	// Initialize the app configuration
 	initConfig()
 
@@ -17,7 +19,7 @@ func init () {
 }
 
 // Initializes the app configuration
-func initConfig () {
+func initConfig() {
 	viper.AddConfigPath(".")
 	viper.SetConfigName("config")
 
@@ -62,6 +64,7 @@ func initLogger() {
 	}
 }
 
-func main () {
+func main() {
 	log.Debug("Current env : ", viper.GetBool("debug"))
+	initSearch()
 }
