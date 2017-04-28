@@ -9,7 +9,6 @@ import (
 	"github.com/blevesearch/bleve/analysis/token/edgengram"
 	"github.com/blevesearch/bleve/analysis/token/length"
 	"github.com/blevesearch/bleve/analysis/token/lowercase"
-	"github.com/blevesearch/bleve/analysis/token/metaphoneanalyzer"
 	"github.com/blevesearch/bleve/analysis/token/shingle"
 	"github.com/blevesearch/bleve/analysis/token/stop"
 	"github.com/blevesearch/bleve/analysis/tokenizer/whitespace"
@@ -38,25 +37,6 @@ func buildIndexMapping() (mapping.IndexMapping, error) {
 	bankMapping.AddFieldMappingsAt("IFSC", standardMappingNoFilter)
 	bankMapping.AddFieldMappingsAt("abbreviation", standardMappingNoFilter)
 
-	// phoneticMapping := bleve.NewTextFieldMapping()
-	// phoneticMapping.Analyzer = "phonetic_analyzer"
-
-	// bankMapping.AddFieldMappingsAt("branch", phoneticMapping)
-	// bankMapping.AddFieldMappingsAt("address", phoneticMapping)
-	// bankMapping.AddFieldMappingsAt("city", phoneticMapping)
-	// bankMapping.AddFieldMappingsAt("district", phoneticMapping)
-	// bankMapping.AddFieldMappingsAt("state", phoneticMapping)
-
-	// edgengramMapping := bleve.NewTextFieldMapping()
-	// edgengramMapping.Analyzer = "edgengram_analyzer"
-
-	// bankMapping.AddFieldMappingsAt("name", edgengramMapping)
-	// bankMapping.AddFieldMappingsAt("branch", edgengramMapping)
-	// bankMapping.AddFieldMappingsAt("address", edgengramMapping)
-	// bankMapping.AddFieldMappingsAt("city", edgengramMapping)
-	// bankMapping.AddFieldMappingsAt("district", edgengramMapping)
-	// bankMapping.AddFieldMappingsAt("state", edgengramMapping)
-
 	// Generic keyowrd analyzer
 	keywordFieldMapping := bleve.NewTextFieldMapping()
 	keywordFieldMapping.Analyzer = keyword.Name
@@ -69,14 +49,24 @@ func buildIndexMapping() (mapping.IndexMapping, error) {
 
 	indexMapping := bleve.NewIndexMapping()
 	indexMapping.AddDocumentMapping("_default", bankMapping)
-	// indexMapping.DefaultAnalyzer = "phonetic_analyzer"
 
 	var err error
 
 	// Filter all non alphabet characters
-	err = indexMapping.AddCustomCharFilter("nonaphabetfilter",
+	err = indexMapping.AddCustomCharFilter("non_alphabet_filter",
 		map[string]interface{}{
 			"regexp":  "[^a-zA-Z ]",
+			"replace": "",
+			"type":    regexp.Name,
+		})
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter non alphanumeric characters
+	err = indexMapping.AddCustomCharFilter("non_alphanumeric_filter",
+		map[string]interface{}{
+			"regexp":  "[^[a-zA-Z][0-9] ]",
 			"replace": "",
 			"type":    regexp.Name,
 		})
@@ -152,7 +142,7 @@ func buildIndexMapping() (mapping.IndexMapping, error) {
 		map[string]interface{}{
 			"type": custom.Name,
 			"char_filters": []interface{}{
-				"nonaphabetfilter",
+				"non_alphabet_filter",
 			},
 			"tokenizer": whitespace.Name,
 			"token_filters": []interface{}{
@@ -171,51 +161,13 @@ func buildIndexMapping() (mapping.IndexMapping, error) {
 		map[string]interface{}{
 			"type":         custom.Name,
 			"char_filters": []interface{}{
-				// "nonaphabetfilter",
+				"non_alphanumeric_filter",
 			},
 			"tokenizer": whitespace.Name,
 			"token_filters": []interface{}{
 				lowercase.Name,
 				"shingle_filter",
 				"edgengram_filter",
-			},
-		})
-	if err != nil {
-		return nil, err
-	}
-
-	// err = indexMapping.AddCustomAnalyzer("edgengram_analyzer",
-	// 	map[string]interface{}{
-	// 		"type": custom.Name,
-	// 		"char_filters": []interface{}{
-	// 			"nonaphabetfilter",
-	// 		},
-	// 		"tokenizer": whitespace.Name,
-	// 		"token_filters": []interface{}{
-	// 			lowercase.Name,
-	// 			en.StopName,
-	// 			"excludewords",
-	// 			"shingle_filter",
-	// 			"edgengram_filter",
-	// 		},
-	// 	})
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	err = indexMapping.AddCustomAnalyzer("phonetic_analyzer",
-		map[string]interface{}{
-			"type": custom.Name,
-			"char_filters": []interface{}{
-				"nonaphabetfilter",
-			},
-			"tokenizer": whitespace.Name,
-			"token_filters": []interface{}{
-				lowercase.Name,
-				en.StopName,
-				"minlength",
-				"excludewords",
-				metaphoneanalyzer.Name,
 			},
 		})
 	if err != nil {

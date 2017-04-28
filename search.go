@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"time"
 	"strings"
-	"io/ioutil"
-	"encoding/json"
 )
 
 var (
@@ -39,21 +37,6 @@ type BanksList struct {
 	Name         string `json:"name"`
 }
 
-func initBanksList() error {
-	banksListPath := viper.GetString("banks_list_path")
-
-	banksListFile, err := ioutil.ReadFile(banksListPath)
-	if err != nil {
-		log.Error("Error opening bankslist file", err.Error())
-	}
-
-	if err = json.Unmarshal([]byte(banksListFile), &banksList); err != nil {
-		log.Error("Error parsing bankslist file", err.Error())
-	}
-
-	return nil
-}
-
 // Initialze bleve search index for banks data
 func initSearch() error {
 	var err error
@@ -77,21 +60,22 @@ func initSearch() error {
 		// Populate banks data and index it
 		bankIndex, err = createSearchIndex(indexPath)
 		if err != nil {
-			log.Error(err)
+			log.Error("Error while creating index", err)
 			return err
 		}
 
 		// Index banks data
 		indexBank(bankIndex, dataPath, batchSize)
 	} else if err != nil {
-		log.Error(err)
+		log.Error("Error while opening index: ", err)
 		return err
 	} else {
 		log.Infof("Opening existing index in path %s", indexPath)
 	}
 
 	// init banks list to be used for querying
-	initBanksList()
+	log.Info("Loading banks list.")
+	loadBanksList(dataPath)
 
 	return nil
 }
@@ -113,6 +97,46 @@ func createSearchIndex(path string) (index bleve.Index, err error) {
 	return index, nil
 }
 
+// Load banks to map
+func loadBanksList(dataPath string) error {
+	banskData, err := os.OpenFile(dataPath, os.O_RDONLY, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+	defer banskData.Close()
+
+	banks := []*Bank{}
+	if err := gocsv.UnmarshalFile(banskData, &banks); err != nil {
+		panic(err)
+	}
+
+	for _, bank := range banks {
+		if bank.Abbreviation == "" {
+			continue
+		}
+
+		// Check it its already there in bankslist
+		isThere := false
+		for _, item := range banksList {
+			if item.Abbreviation == bank.Abbreviation {
+				isThere = true
+				break
+			}
+		}
+
+		if (isThere) {
+			continue
+		}
+
+		banksList = append(banksList, BanksList{
+			Abbreviation: bank.Abbreviation,
+			Name: bank.Name,
+		})
+	}
+
+	return nil
+}
+
 // Create search index
 func indexBank(i bleve.Index, dataPath string, batchSize int) error {
 	log.Info("Indexing banks data.")
@@ -122,15 +146,14 @@ func indexBank(i bleve.Index, dataPath string, batchSize int) error {
 	// Create new index batch for bulk index
 	batch := i.NewBatch()
 
+	// Read banks data file
 	banskData, err := os.OpenFile(dataPath, os.O_RDONLY, os.ModePerm)
 	if err != nil {
 		panic(err)
 	}
-
 	defer banskData.Close()
 
 	banks := []*Bank{}
-
 	if err := gocsv.UnmarshalFile(banskData, &banks); err != nil {
 		panic(err)
 	}
@@ -181,9 +204,10 @@ func isExcludedWord(word string) bool {
 	return false
 }
 
-// Get the bank name from the search query string
-func getBankFromQuery(q string) (string, string) {
-	match := map[string]int{}
+// Get bank abbreiviation and sanatized query from raw query
+func processRawQuery(q string) (string, string) {
+	// map of matches
+	match := ""
 	newQuery := ""
 
 	// Check for abbreviation
@@ -191,87 +215,49 @@ func getBankFromQuery(q string) (string, string) {
 
 	for _, word := range words {
 		wordLower := strings.ToLower(word)
+		// Exclude if its in list of excluded words
 		if isExcludedWord(wordLower) {
 			continue
 		}
 
+		// Skip if word is less than three characters
 		if len(word) < 3 {
 			newQuery += word + " "
 			continue
 		}
 
-		foundMatch := false
-		for _, bank := range banksList {
-			abb := strings.ToLower(bank.Abbreviation)
+		thisWordMatched := false
+		if match == "" {
+			for _, bank := range banksList {
+				abb := strings.ToLower(bank.Abbreviation)
 
-			// Check in abbreviation
-			startsWith := strings.HasPrefix(abb, wordLower)
-
-			if startsWith {
-				val, ok := match[bank.Abbreviation]
-				if ok {
-					match[bank.Abbreviation] = val + 1
-				} else {
-					match[bank.Abbreviation] = 1
+				// Check if abbriviation starts with given word
+				if strings.HasPrefix(abb, wordLower) {
+					thisWordMatched = true
+					match = abb
+					break
 				}
 
-				foundMatch = true
-				continue
-			}
-
-			// check in name
-			if strings.Index(strings.ToLower(bank.Name), wordLower) != -1 {
-				val, ok := match[bank.Abbreviation]
-				if ok {
-					match[bank.Abbreviation] = val + 1
-				} else {
-					match[bank.Abbreviation] = 1
+				// check in name
+				if strings.Index(strings.ToLower(bank.Name), wordLower) != -1 {
+					thisWordMatched = true
+					match = abb
+					break
 				}
-
-				foundMatch = true
-				continue
 			}
 		}
 
-		if !foundMatch {
+		// Add word to query if its not abbreviation
+		if match == "" || !thisWordMatched {
 			newQuery += word + " "
 		}
 	}
 
-	if len(match) == 0 {
-		return q, ""
-	} else if len(match) == 1 {
-		for key, _ := range match {
-			return strings.TrimSpace(newQuery), key
-		}
-	} else {
-		highest := 0
-		for _, val := range match {
-			if val > highest {
-				highest = val
-			}
-		}
-
-		highestMatches := []string{}
-		for key, val := range match {
-			if val == highest {
-				highestMatches = append(highestMatches, key)
-			}
-		}
-
-		if len(highestMatches) == 1 {
-			return strings.TrimSpace(newQuery), highestMatches[0]
-		}
-	}
-
-	return q, ""
-}
-
-func searchIndex(q string, abb string, size int, from int) (*bleve.SearchResult, error) {
-	newQuery, abb := getBankFromQuery(strings.TrimSpace(q))
-
+	// Create a query string with joining multiple
+	// words if the first word is less than 3 characters
+	// For example: jp nagar -> jpnagar
 	formattedQuery := ""
-	words := strings.Fields(newQuery)
+	words = strings.Fields(strings.TrimSpace(newQuery))
 	skipNext := false
 	for i := 0; i < len(words); i++ {
 		if skipNext == true {
@@ -288,8 +274,22 @@ func searchIndex(q string, abb string, size int, from int) (*bleve.SearchResult,
 		}
 	}
 
+	return strings.TrimSpace(formattedQuery), match
+}
+
+// Search for a query in the index
+// Try to get the bank abbriviation from querystring using bankslist map
+// and perform conjuction query to retrive results
+func querySearch(q string, size int, from int) (*bleve.SearchResult, error) {
+	// Get abbriviation and sanatized query string
+	formattedQuery, abb := processRawQuery(strings.ToLower(strings.TrimSpace(q)))
+
+	// Create a conjuction query
 	cquery := bleve.NewConjunctionQuery()
 
+	// If valid formatted query then create a disjunction query
+	// of individual words in the query wit minimum number of conditions
+	// to satisfy to one
 	if strings.TrimSpace(formattedQuery) != "" {
 		dquery := bleve.NewDisjunctionQuery()
 		dquery.SetMin(1)
@@ -301,12 +301,15 @@ func searchIndex(q string, abb string, size int, from int) (*bleve.SearchResult,
 		cquery.AddQuery(dquery)
 	}
 
+	// Add query to conjuction query if abbreiviation
+	// is available for given query
 	if abb != "" {
 		query := bleve.NewTermQuery(abb)
 		query.SetField("abbreviation")
 		cquery.AddQuery(query)
 	}
 
+	// Search index
 	search := bleve.NewSearchRequest(cquery)
 	search.Fields = []string{"*"}
 	search.From = from

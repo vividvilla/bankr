@@ -67,4 +67,5 @@ func initLogger() {
 func main() {
 	log.Debug("Current env : ", viper.GetBool("debug"))
 	initSearch()
+	fmt.Println(querySearch("HDFC Thirumangalam", 0, 10))
 }
