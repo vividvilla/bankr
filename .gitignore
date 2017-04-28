@@ -284,5 +284,8 @@ ENV/
 
 # End of https://www.gitignore.io/api/go,osx,macos,python,pycharm,webstorm,intellij
 
+### Go vendored packages ###
+vendor
+
 # Intellij
 .idea
