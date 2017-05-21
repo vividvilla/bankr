@@ -289,3 +289,6 @@ vendor
 
 # Intellij
 .idea
+
+# Project specific
+config.toml

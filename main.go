@@ -26,7 +26,7 @@ func initConfig() {
 	// Default configs
 	viper.SetDefault("environment", "debug")
 	// Port to run the app
-	viper.SetDefault("port", ":9000")
+	viper.SetDefault("address", "127.0.0.1:3000")
 	// Bleve search index path
 	viper.SetDefault("search_index_path", "search.index")
 	// RBI parsed CSV file path
@@ -48,7 +48,7 @@ func initConfig() {
 
 	err := viper.ReadInConfig()
 	if err != nil { // Handle errors reading the config file
-		panic(fmt.Errorf("Fatal error config file: %s \n", err))
+		panic(fmt.Errorf("Fatal error config file: %s", err))
 	}
 }
 
@@ -66,6 +66,10 @@ func initLogger() {
 
 func main() {
 	log.Debug("Current env : ", viper.GetBool("debug"))
+
+	// Initialize search
 	initSearch()
-	fmt.Println(querySearch("HDFC Thirumangalam", 0, 10))
+
+	// Initialize server
+	initServer(viper.GetString("address"))
 }

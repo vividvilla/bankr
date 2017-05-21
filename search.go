@@ -1,24 +1,26 @@
 package main
 
 import (
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/blevesearch/bleve"
 	"github.com/gocarina/gocsv"
 	"github.com/spf13/viper"
-	"os"
-	"strconv"
-	"time"
-	"strings"
 )
 
 var (
-	bankIndex	bleve.Index
+	bankIndex bleve.Index
 	// List banks and its abbreviation
-	banksList     []BanksList
+	banksList []BanksList
 	// List of words excluded from bank name, address and other fields
 	excludedWords = [...]string{"of", "bank", "and", "limited", "ltd"}
 )
 
+// Bank structure
 type Bank struct {
 	Name         string `json:"name" csv:"BANK"`
 	IFSC         string `json:"IFSC" csv:"IFSC"`
@@ -32,6 +34,7 @@ type Bank struct {
 	Abbreviation string `json:"abbreviation" csv:"ABBREVIATION"`
 }
 
+// BanksList : List of banks
 type BanksList struct {
 	Abbreviation string `json:"abbreviation"`
 	Name         string `json:"name"`
@@ -124,13 +127,13 @@ func loadBanksList(dataPath string) error {
 			}
 		}
 
-		if (isThere) {
+		if isThere {
 			continue
 		}
 
 		banksList = append(banksList, BanksList{
 			Abbreviation: bank.Abbreviation,
-			Name: bank.Name,
+			Name:         bank.Name,
 		})
 	}
 
