@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"strings"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/blevesearch/bleve"
 )
@@ -24,11 +26,11 @@ type SeachResultItem struct {
 
 // SearchResultsResponse is a response structure for final search results
 type SearchResultsResponse struct {
-	TotalResults uint64            `json:"total_results"`
-	MoreResults  bool              `json:"more_results"`
-	Page         int               `json:"page"`
-	Time         string            `json:"took"`
-	Results      []SeachResultItem `json:"results"`
+	TotalResultsPages uint64            `json:"total_results_pages"`
+	MoreResults       bool              `json:"more_results"`
+	Page              int               `json:"page"`
+	Time              string            `json:"took"`
+	Results           []SeachResultItem `json:"results"`
 }
 
 // Adapter type
@@ -64,12 +66,12 @@ func writeJSONResponse(w http.ResponseWriter, i interface{}, status int) {
 }
 
 // Validate search query
-func validateSearchQuery(query string) (string, error) {
+func sanatizeSearchQuery(query string) (string, error) {
 	if len(query) < 3 {
 		return query, errors.New("Search query should be of minimum 3 characters")
 	}
 
-	return query, nil
+	return strings.ToLower(query), nil
 }
 
 // Index page handler
@@ -92,7 +94,7 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	)
 
 	// Validate search query
-	query, err := validateSearchQuery(query)
+	query, err := sanatizeSearchQuery(query)
 	if err != nil {
 		errorRespose.Message = err.Error()
 		writeJSONResponse(w, errorRespose, http.StatusBadRequest)
@@ -104,9 +106,11 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 		pageNumber = 1
 	} else {
 		pageNumber, err = strconv.Atoi(page)
-		errorRespose.Message = "Invalid page number."
-		writeJSONResponse(w, errorRespose, http.StatusBadRequest)
-		return
+		if err != nil {
+			errorRespose.Message = "Invalid page number."
+			writeJSONResponse(w, errorRespose, http.StatusBadRequest)
+			return
+		}
 	}
 
 	// Search for give query and result size (startIndex + size). Start index is (pageNum - 1)
@@ -134,11 +138,11 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Final search response
 	searchResultsResponse := SearchResultsResponse{
-		TotalResults: searchResults.Total,
-		MoreResults:  moreResultsAvailable,
-		Page:         pageNumber,
-		Time:         searchResults.Took.String(),
-		Results:      searchResultItems,
+		TotalResultsPages: searchResults.Total - 1,
+		MoreResults:       moreResultsAvailable,
+		Page:              pageNumber,
+		Time:              searchResults.Took.String(),
+		Results:           searchResultItems,
 	}
 
 	// Write the output
