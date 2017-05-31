@@ -1,0 +1,17 @@
+#!/bin/bash
+
+HASH=`git rev-parse --short HEAD`
+COMMIT_DATE=`git show -s --format=%ci $HASH`
+BUILD_DATE=$(date '+%Y-%m-%d %H:%M:%S');
+VERSION="$HASH ($COMMIT_DATE)"
+
+BIN="bankr.bin"
+
+echo "Building $BIN"
+
+if go build -ldflags "-X 'main.buildVersion=$VERSION' -X 'main.buildDate=$BUILD_DATE'" -o $BIN; then
+    echo "Build successful. Current build version: $VERSION"
+else
+    echo "Build failed with errors."
+    exit 1
+fi

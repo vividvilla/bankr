@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if ./build; then
+    echo "Running Bankr"
+    ./bankr.bin
+else
+    echo "Aborting due to previous errors."
+    exit 1
+fi
