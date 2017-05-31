@@ -76,7 +76,7 @@ func sanatizeSearchQuery(query string) (string, error) {
 
 // Index page handler
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Hello from Bankr!"))
+	w.Write([]byte("Bankr Api v3"))
 }
 
 // Query search handler
@@ -150,9 +150,11 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func initServer(address string) {
-	http.Handle("/", Adapt(http.HandlerFunc(indexHandler)))
+	// Server static files
+	http.Handle("/", http.FileServer(http.Dir("./frontend/dist/")))
 
 	// API handlers
+	http.Handle("/api", Adapt(http.HandlerFunc(indexHandler)))
 	http.Handle("/api/search", Adapt(http.HandlerFunc(searchHandler), HttpLogger()))
 
 	// Start the server

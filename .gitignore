@@ -162,7 +162,6 @@ __pycache__/
 # Distribution / packaging
 .Python
 env/
-build/
 develop-eggs/
 dist/
 downloads/
@@ -292,3 +291,7 @@ vendor
 
 # Project specific
 config.toml
+
+# JS
+frontend/dist/
+frontend/node_modules/
