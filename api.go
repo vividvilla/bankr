@@ -12,8 +12,8 @@ import (
 	"github.com/blevesearch/bleve"
 )
 
-// ErrorResponse Error response structure
-type ErrorResponse struct {
+// DefaultResponse Error response structure
+type DefaultResponse struct {
 	Message string `json:"message"`
 }
 
@@ -76,7 +76,7 @@ func sanatizeSearchQuery(query string) (string, error) {
 
 // Index page handler
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Bankr Api v3"))
+	writeJSONResponse(w, DefaultResponse{"Bankr API v3"}, http.StatusOK)
 }
 
 // Query search handler
@@ -85,7 +85,7 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	page := r.URL.Query().Get("p")
 
 	var (
-		errorRespose         ErrorResponse
+		errorRespose         DefaultResponse
 		searchResults        *bleve.SearchResult
 		searchResultItems    []SeachResultItem
 		resultsSize          = 10
