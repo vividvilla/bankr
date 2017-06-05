@@ -12,20 +12,30 @@
 				</div>
 			</div>
 			<div class="search-results" v-if="this.results">
-				<div class="search-item" v-for="result in results.results">
-					<div class="search-item-header">
-						<h2 class="name">{{ result.fields.name }}</h2>
-						<span class="ifsc">{{ result.fields.IFSC }}</span>
-					</div>
-					<div class="search-item-body">
-						<div class="branch">
-							<span></span> {{ result.fields.branch }}
+				<transition-group name="list" tag="div" appear>
+					<div class="search-item" v-for="result in results.results" :key="result.id">
+						<div class="search-item-header">
+							<h2 class="name">{{ result.fields.name }}</h2>
+							<span class="ifsc">{{ result.fields.IFSC }}</span>
+							<span>&nbsp;</span>
 						</div>
+						<div class="search-item-body">
+							<span class="branch">{{ result.fields.branch }}</span>
+							<div class="info">
+								<div class="micr" v-if="result.fields.MICR">
+									<span class="icon icon-qrcode"></span><span>{{ result.fields.MICR }}</span>
+								</div>
+								<div class="phone-number">
+									<span class="icon icon-phone"></span><span>{{ result.fields.contact.split(".")[0] }}</span>
+								</div>
+							</div>
+						</div>
+
 						<div class="address">
-							<span></span> {{ result.fields.address }}
+							<span class="icon icon-location"></span><span>{{ result.fields.address }}</span>
 						</div>
 					</div>
-				</div>
+				</transition-group>
 			</div>
 		</div>
 	</div>

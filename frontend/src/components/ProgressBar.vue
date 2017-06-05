@@ -13,8 +13,8 @@
 		data () {
 			return {
 				width: 0,
-				barColor: "#fc677e",
-				barSccessColor: "#fc677e",
+				barColor: "#0070e0",
+				barSccessColor: "#0070e0",
 				barErrorColor: "#fc677e",
 				timer: null,
 				barElement: null
