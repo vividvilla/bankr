@@ -1,8 +1,11 @@
 <template>
 	<div id="app">
 		<div class="main">
+			<!--Header-->
 			<div id="header"></div>
+			<!--Search component-->
 			<search></search>
+			<!--Footer-->
 			<div class="footer"></div>
 		</div>
 	</div>
