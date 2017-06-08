@@ -155,7 +155,7 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Search for give query and result size (startIndex + size). Start index is (pageNum - 1)
-	searchResults, err = querySearch(query, resultsSize, pageNumber)
+	searchResults, err = querySearch(query, resultsSize, pageNumber-1)
 	if err != nil {
 		log.Errorf("Error while searching query: %v", err)
 		errorRespose.Message = "Something went wrong. Please report to admin."
