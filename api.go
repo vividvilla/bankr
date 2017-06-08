@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 
@@ -10,6 +11,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/blevesearch/bleve"
+	"github.com/spf13/viper"
 )
 
 // DefaultResponse Error response structure
@@ -77,6 +79,45 @@ func sanatizeSearchQuery(query string) (string, error) {
 // Index page handler
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSONResponse(w, DefaultResponse{"Bankr API v3"}, http.StatusOK)
+}
+
+func getGeocodeAddressHandler(w http.ResponseWriter, r *http.Request) {
+	latitude := r.URL.Query().Get("latitude")
+	longitude := r.URL.Query().Get("longitude")
+	geocodeApiKey := viper.GetString("geocode_api_key")
+	geocodeAPIURI := viper.GetString("geocode_api_uri")
+
+	client := &http.Client{}
+	request, err := http.NewRequest("GET", geocodeAPIURI, nil)
+
+	if err != nil {
+		log.Errorf("Error while getting location: %v", err)
+		writeJSONResponse(w, DefaultResponse{"Error while getting location"}, http.StatusBadGateway)
+	}
+
+	// Add query params to the request
+	q := request.URL.Query()
+	q.Add("latlng", latitude+","+longitude)
+	q.Add("key", geocodeApiKey)
+	request.URL.RawQuery = q.Encode()
+
+	resp, err := client.Do(request)
+	responseData, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		log.Errorf("Error while parsing location response: %v", err)
+		writeJSONResponse(w, DefaultResponse{"Error while getting location"}, http.StatusBadGateway)
+	}
+
+	var response map[string]interface{}
+	err = json.Unmarshal(responseData, &response)
+
+	if err != nil {
+		log.Errorf("Error while parsing unmarshaling response: %v", err)
+		writeJSONResponse(w, DefaultResponse{"Error while getting location"}, http.StatusBadGateway)
+	}
+
+	writeJSONResponse(w, response, http.StatusOK)
 }
 
 // Query search handler
@@ -156,6 +197,7 @@ func initServer(address string) {
 	// API handlers
 	http.Handle("/api", Adapt(http.HandlerFunc(indexHandler)))
 	http.Handle("/api/search", Adapt(http.HandlerFunc(searchHandler), HttpLogger()))
+	http.Handle("/api/location", Adapt(http.HandlerFunc(getGeocodeAddressHandler), HttpLogger()))
 
 	// Start the server
 	log.Infof("Starting server: http://%s", address)

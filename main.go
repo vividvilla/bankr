@@ -41,6 +41,9 @@ func initConfig() {
 	viper.SetDefault("create_index", false)
 	// Banks db path
 	viper.SetDefault("db_path", "banks.db")
+	// Geocode config
+	viper.SetDefault("geocode_api_key", "")
+	viper.SetDefault("geocode_api_uri", "")
 
 	// Parse commandline
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
