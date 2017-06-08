@@ -126,7 +126,7 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	page := r.URL.Query().Get("p")
 
 	var (
-		errorRespose         DefaultResponse
+		errorResponse        DefaultResponse
 		searchResults        *bleve.SearchResult
 		searchResultItems    []SeachResultItem
 		resultsSize          = 10
@@ -137,8 +137,8 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	// Validate search query
 	query, err := sanatizeSearchQuery(query)
 	if err != nil {
-		errorRespose.Message = err.Error()
-		writeJSONResponse(w, errorRespose, http.StatusBadRequest)
+		errorResponse.Message = err.Error()
+		writeJSONResponse(w, errorResponse, http.StatusBadRequest)
 		return
 	}
 
@@ -148,8 +148,8 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		pageNumber, err = strconv.Atoi(page)
 		if err != nil {
-			errorRespose.Message = "Invalid page number."
-			writeJSONResponse(w, errorRespose, http.StatusBadRequest)
+			errorResponse.Message = "Invalid page number."
+			writeJSONResponse(w, errorResponse, http.StatusBadRequest)
 			return
 		}
 	}
@@ -158,8 +158,8 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	searchResults, err = querySearch(query, resultsSize, pageNumber-1)
 	if err != nil {
 		log.Errorf("Error while searching query: %v", err)
-		errorRespose.Message = "Something went wrong. Please report to admin."
-		writeJSONResponse(w, errorRespose, http.StatusInternalServerError)
+		errorResponse.Message = "Something went wrong. Please report to admin."
+		writeJSONResponse(w, errorResponse, http.StatusInternalServerError)
 		return
 	}
 
@@ -185,6 +185,8 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 		Time:              searchResults.Took.String(),
 		Results:           searchResultItems,
 	}
+
+	log.Infof("Searched for term q=%v - %v results generated in %v nanoseconds", query, searchResults.Total, searchResults.Took.Nanoseconds())
 
 	// Write the output
 	writeJSONResponse(w, searchResultsResponse, http.StatusOK)
