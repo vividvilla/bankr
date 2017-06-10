@@ -214,7 +214,7 @@
 			errorProgress () {
 				this.$events.$emit("finishProgress", {success: true})
 			},
-			doSearch (searchTerm, preventURIChange, preventCurrentLocationReset) {
+			doSearch (searchTerm, preventURIChange, preventCurrentLocationReset, preventScroll) {
 				if (!searchTerm || searchTerm.length < 3) {
 					this.inputError = true
 					return
@@ -242,7 +242,10 @@
 					.then((response) => {
 						this.results = response.data
 						this.successProgress()
-						this.$nextTick(() => this.scrollToResults())
+
+						if (!preventScroll) {
+							this.$nextTick(() => this.scrollToResults())
+						}
 					})
 					.catch(() => {
 						this.errorProgress()
@@ -283,7 +286,7 @@
 
 				// Do search based on the current formatted address
 				if (formatted && formatted.length >= 3) {
-					this.doSearch(formatted, true, true)
+					this.doSearch(formatted, true, true, true)
 				}
 			},
 			getUserLocation (latitude, longitude) {
