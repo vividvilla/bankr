@@ -2,6 +2,7 @@
 // (runtime-only or standalone) has been set in webpack.base.conf with an alias.
 import Vue from "vue"
 import VueRouter from "vue-router"
+import VueClipboards from "vue-clipboards"
 
 import router from "./router"
 
@@ -13,6 +14,7 @@ let eventBus = new Vue()
 Vue.prototype.$events = eventBus
 
 Vue.use(VueRouter)
+Vue.use(VueClipboards)
 
 /* eslint-disable no-new */
 new Vue({

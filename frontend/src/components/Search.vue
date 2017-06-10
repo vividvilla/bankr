@@ -33,30 +33,46 @@
 
 			<!--Search results-->
 			<div class="search-results" v-if="results">
+				<!--No results found-->
+				<transition name="fade">
+					<div class="no-results" v-if="results && (!results.results || results.results.length === 0)">
+						<h2>No results found</h2>
+						<p>Try again with different keyword.</p>
+					</div>
+				</transition>
+
 				<!--Query time-->
-				<div class="query-time" v-if="results && results.results.length > 0">
-					Took {{ results.took }} to search
-				</div>
+				<transition name="fade">
+					<div class="query-time" v-if="results && results.results && results.results.length > 0">
+						Took {{ results.took }} to search
+					</div>
+				</transition>
 
 				<!--Search result items-->
 				<transition-group name="list" tag="div" appear>
 					<div class="search-item" v-for="result in results.results" :key="result.id">
 						<!--Top row-->
 						<div class="search-item-header">
-							<h2 class="name">{{ result.fields.name }}</h2>
-							<span class="ifsc" title="Bank IFSC">{{ result.fields.IFSC }}</span>
-							<span>&nbsp;</span>
+							<h2 class="name">
+								<span>{{ result.fields.name }}</span>
+								<span class="share icon icon-export" title="Share IFSC" @click="showSharePopup(result)"></span>
+							</h2>
+							<span class="ifsc" title="Bank IFSC"><label>IFSC</label>{{ result.fields.IFSC }}</span>
+							<!--Hack to make IFSC selectable without overlapping with other content-->
+							<span class="hack">&nbsp;</span>
 						</div>
 
 						<!--Second row-->
 						<div class="search-item-body">
-							<span class="branch" title="Branch name">{{ result.fields.branch }}</span>
+							<span class="branch" title="Branch name"><label>Branch</label>{{ result.fields.branch }}</span>
 							<div class="info">
 								<div class="micr" v-if="result.fields.MICR" title="Bank MICR code">
+									<label>MICR</label>
 									<span class="icon icon-qrcode"></span>
 									<span>{{ result.fields.MICR }}</span>
 								</div>
 								<div class="phone-number" v-if="result.fields.contact" title="Contact no.">
+									<label>Phone</label>
 									<span class="icon icon-phone"></span>
 									<span>{{ result.fields.contact.split(".")[0] }}</span>
 								</div>
@@ -66,10 +82,8 @@
 						<!--Last row-->
 						<div class="search-item-footer">
 							<div class="address" title="Bank address">
+								<label>Address</label>
 								<span class="icon icon-location"></span><span>{{ result.fields.address }}</span>
-							</div>
-							<div class="share" title="Share IFSC" @click="showSharePopup(result)">
-								<span class="icon icon-mail"></span>
 							</div>
 						</div>
 					</div>
@@ -77,9 +91,13 @@
 			</div>
 
 			<transition name="fade">
-				<div class="share-popup-wrapper" v-if="sharePopup && currentShareItem">
+				<div id="share-popup-wrapper" class="share-popup-wrapper" v-if="sharePopup && currentShareItem" @click="closeSharePopup">
 					<div class="share-popup">
-						<span class="url">https://bankr.io/?q={{ currentShareItem.fields.IFSC }}</span>
+						<input class="share-url" :value="currentShareURL" readonly>
+						<button class="btn" v-clipboard="currentShareURL"
+							@success="handleClipboardCopySuccess" @error="handleClipboardCopyError" alt="Copy to clipboard">
+							<span class="icon icon-clippy"></span>
+						</button>
 					</div>
 				</div>
 			</transition>
@@ -105,7 +123,8 @@
 				sharePopup: false,
 				currentShareItem: {},
 				isCheckingNavigation: false,
-				currentLocation: ""
+				currentLocation: "",
+				shareBaseURI: process.env.SHARE_BASE
 			}
 		},
 		mounted () {
@@ -135,10 +154,36 @@
 				}
 			}
 		},
+		computed: {
+			currentShareURL () {
+				if (!this.currentShareItem) return ""
+				return process.env.SHARE_BASE + this.currentShareItem.fields.IFSC
+			}
+		},
 		methods: {
 			showSharePopup (item) {
 				this.currentShareItem = item
 				this.sharePopup = true
+			},
+			closeSharePopup (event) {
+				if (event.target.id === "share-popup-wrapper") {
+					this.currentShareItem = null
+					this.sharePopup = false
+				}
+			},
+			handleClipboardCopySuccess () {
+				this.$el.querySelector(".share-popup button").style.background = "rgba(46, 204, 113, 0.5)"
+
+				setTimeout(() => {
+					this.$el.querySelector(".share-popup button").style.background = "transparent"
+				}, 500)
+			},
+			handleClipboardCopyError () {
+				this.$el.querySelector(".share-popup button").style.background = "rgba(231, 76, 60, 0.5)"
+
+				setTimeout(() => {
+					this.$el.querySelector(".share-popup button").style.background = "transparent"
+				}, 500)
 			},
 			geoSuccess (position) {
 				this.getUserLocation(position.coords.latitude, position.coords.longitude)
@@ -181,6 +226,7 @@
 				// API call
 				axios.get(process.env.API_BASE + "/search", { params })
 					.then((response) => {
+						console.log(response.data)
 						this.results = response.data
 						this.successProgress()
 					})
