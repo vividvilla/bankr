@@ -50,28 +50,31 @@
 
 				<!--Search result items-->
 				<transition-group name="list" tag="div" appear>
-					<div class="search-item" v-for="result in results.results" :key="result.id">
+					<div class="search-item" v-for="(result, $index) in results.results" :key="result.id">
 						<!--Top row-->
 						<div class="search-item-header">
 							<h2 class="name">
 								<span>{{ result.fields.name }}</span>
 								<span class="share icon icon-export" title="Share IFSC" @click="showSharePopup(result)"></span>
 							</h2>
-							<span class="ifsc" title="Bank IFSC"><label>IFSC</label>{{ result.fields.IFSC }}</span>
+							<span class="ifsc hint--top" aria-label="Bank IFSC" v-clipboard="result.fields.IFSC" :key="$index"
+								@success="handleClipboardEvent" @error="handleClipboardEvent">
+								<label>IFSC</label>{{ result.fields.IFSC }}
+							</span>
 							<!--Hack to make IFSC selectable without overlapping with other content-->
 							<span class="hack">&nbsp;</span>
 						</div>
 
 						<!--Second row-->
 						<div class="search-item-body">
-							<span class="branch" title="Branch name"><label>Branch</label>{{ result.fields.branch }}</span>
+							<span class="branch hint--top" aria-label="Branch name"><label>Branch</label>{{ result.fields.branch }}</span>
 							<div class="info">
-								<div class="micr" v-if="result.fields.MICR" title="Bank MICR code">
+								<div class="micr hint--top" v-if="result.fields.MICR" aria-label="MICR code">
 									<label>MICR</label>
 									<span class="icon icon-qrcode"></span>
 									<span>{{ result.fields.MICR }}</span>
 								</div>
-								<div class="phone-number" v-if="result.fields.contact" title="Contact no.">
+								<div class="phone-number hint--top" v-if="result.fields.contact" aria-label="Bank contact no.">
 									<label>Phone</label>
 									<span class="icon icon-phone"></span>
 									<span>{{ result.fields.contact.split(".")[0] }}</span>
@@ -81,7 +84,7 @@
 
 						<!--Last row-->
 						<div class="search-item-footer">
-							<div class="address" title="Bank address">
+							<div class="address hint--top" aria-label="Bank address">
 								<label>Address</label>
 								<span class="icon icon-location"></span><span>{{ result.fields.address }}</span>
 							</div>
@@ -91,11 +94,11 @@
 			</div>
 
 			<transition name="fade">
-				<div id="share-popup-wrapper" class="share-popup-wrapper" v-if="sharePopup && currentShareItem" @click="closeSharePopup">
+				<div id="share-popup-wrapper" class="share-popup-wrapper" v-show="sharePopup && currentShareItem" @click="closeSharePopup">
 					<div class="share-popup">
 						<input class="share-url" :value="currentShareURL" readonly>
-						<button class="btn" v-clipboard="currentShareURL"
-							@success="handleClipboardCopySuccess" @error="handleClipboardCopyError" alt="Copy to clipboard">
+						<button class="btn hint--top" v-clipboard="currentShareURL" key="share" @success="handleClipboardEvent" @error="handleClipboardEvent"
+							aria-label="Copy to clipboard">
 							<span class="icon icon-clippy"></span>
 						</button>
 					</div>
@@ -156,7 +159,7 @@
 		},
 		computed: {
 			currentShareURL () {
-				if (!this.currentShareItem) return ""
+				if (!this.currentShareItem || !this.currentShareItem.fields) return ""
 				return process.env.SHARE_BASE + this.currentShareItem.fields.IFSC
 			}
 		},
@@ -171,19 +174,21 @@
 					this.sharePopup = false
 				}
 			},
-			handleClipboardCopySuccess () {
-				this.$el.querySelector(".share-popup button").style.background = "rgba(46, 204, 113, 0.5)"
+			handleClipboardEvent (target, error) {
+				let element = target.trigger
+				let prevLabel = element.attributes && element.attributes["aria-label"] && element.attributes["aria-label"].value
 
-				setTimeout(() => {
-					this.$el.querySelector(".share-popup button").style.background = "transparent"
-				}, 500)
-			},
-			handleClipboardCopyError () {
-				this.$el.querySelector(".share-popup button").style.background = "rgba(231, 76, 60, 0.5)"
+				if (error) {
+					element.attributes["aria-label"].value = "Copy failed."
+				} else {
+					element.attributes["aria-label"].value = "Copied."
+				}
 
-				setTimeout(() => {
-					this.$el.querySelector(".share-popup button").style.background = "transparent"
-				}, 500)
+				if (prevLabel) {
+					setTimeout(() => {
+						element.attributes["aria-label"].value = prevLabel
+					}, 1500)
+				}
 			},
 			geoSuccess (position) {
 				this.getUserLocation(position.coords.latitude, position.coords.longitude)
@@ -226,7 +231,6 @@
 				// API call
 				axios.get(process.env.API_BASE + "/search", { params })
 					.then((response) => {
-						console.log(response.data)
 						this.results = response.data
 						this.successProgress()
 					})

@@ -1,4 +1,5 @@
 @import "fontello";
+@import "hint";
 
 html,
 body {
@@ -205,6 +206,7 @@ input {
 				top: 6px;
 				letter-spacing: 1px;
 				font-weight: 300;
+				cursor: pointer;
 			}
 
 			.search-item-body {
@@ -412,7 +414,8 @@ input {
 					 display: none;
 				 }
 
-				.icon {
+				.search-item-body .icon,
+				.search-item-footer .icon {
 					display: none;
 				}
 
@@ -431,5 +434,24 @@ input {
 				}
 		 	}
 		 }
+
+		.share-popup-wrapper {
+			.share-popup {
+				padding: 6%;
+				width: 100%;
+				top: 0;
+				left: 0;
+				margin: 0;
+				position: relative;
+				box-sizing: border-box;
+				text-align: center;
+
+				.share-url {
+					width: 280px;
+					min-width: 280px;
+					font-size: 0.929rem;
+				}
+			}
+		}
 	}
 }
