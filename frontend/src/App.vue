@@ -8,7 +8,7 @@
 			<!--Footer-->
 			<div class="footer">
 				<div class="links">
-					<a href="/api">Api</a> &mdash;
+					<a href="https://github.com/vividvilla/bankr/wiki/API" target="_blank">Api</a> &mdash;
 					<a href="https://github.com/vividvilla/bankr" target="_blank">Source</a> &mdash;
 					<a href="https://goo.gl/forms/0tioEeHq2KtGW6lT2" target="_blank">
 						<span class="icon icon-mail"></span>  bugs/feedback/contact
