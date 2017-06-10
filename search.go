@@ -242,11 +242,11 @@ func processRawQuery(q string) (string, string) {
 				}
 
 				// check in name
-				if strings.Index(strings.ToLower(bank.Name), wordLower) != -1 {
-					thisWordMatched = true
-					match = abb
-					break
-				}
+				// if strings.Index(strings.ToLower(bank.Name), wordLower) != -1 {
+				// 	thisWordMatched = true
+				// 	match = abb
+				// 	break
+				// }
 			}
 		}
 
