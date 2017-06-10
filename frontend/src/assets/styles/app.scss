@@ -279,6 +279,7 @@ input {
 			left: 50%;
 			width: 350px;
 			padding: 40px;
+			border-radius: 2px;
 			position: fixed;
 			background: #fff;
 			margin-left: -175px;
@@ -438,9 +439,10 @@ input {
 		.share-popup-wrapper {
 			.share-popup {
 				padding: 6%;
-				width: 100%;
-				top: 0;
-				left: 0;
+				width: 96%;
+				top: 30%;
+				right: 2%;
+				left: 2%;
 				margin: 0;
 				position: relative;
 				box-sizing: border-box;
@@ -453,5 +455,10 @@ input {
 				}
 			}
 		}
+	}
+
+	[class*="hint--"]:hover:before,
+	[class*="hint--"]:hover:after {
+		display: none;
 	}
 }
