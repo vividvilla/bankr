@@ -16,6 +16,7 @@
   "dependencies": {
     "axios": "^0.16.2",
     "clipboard": "^1.7.1",
+    "smoothscroll": "^0.3.0",
     "vue": "^2.3.3",
     "vue-clipboards": "^1.0.2",
     "vue-router": "^2.5.3"

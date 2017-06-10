@@ -111,6 +111,7 @@
 <script>
 	import Vue from "vue"
 	import axios from "axios"
+	import smoothScroll from "smoothscroll"
 
 	import ProgressBar from "./ProgressBar"
 
@@ -190,6 +191,14 @@
 					}, 1500)
 				}
 			},
+			scrollToResults () {
+				let width = Math.max(document.documentElement.clientWidth, window.innerWidth || 0)
+
+				// Scroll to search for mobile devices.
+				if (width <= 550) {
+					smoothScroll(this.$el.querySelector(".search-results"))
+				}
+			},
 			geoSuccess (position) {
 				this.getUserLocation(position.coords.latitude, position.coords.longitude)
 			},
@@ -233,6 +242,7 @@
 					.then((response) => {
 						this.results = response.data
 						this.successProgress()
+						this.$nextTick(() => this.scrollToResults())
 					})
 					.catch(() => {
 						this.errorProgress()

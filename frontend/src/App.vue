@@ -29,13 +29,8 @@ export default {
 		Search
 	},
 	mounted () {
-		this.$nextTick(() => this.setHeight())
 	},
 	methods: {
-		setHeight () {
-			let h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0)
-			this.$el.style.height = h
-		}
 	}
 }
 </script>
